@@ -1,0 +1,17 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Env files
+.env
+**/.env
+
+# Logs
+*.log
+
+# Build folders
+meeting-summary-client/build
+meeting-summary-client/dist
+
+# OS files
+.DS_Store
