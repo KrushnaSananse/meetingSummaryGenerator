@@ -1,0 +1,336 @@
+Project: Leave Management System – Rotational Shift Module
+Date: February 26, 2026
+Duration: 1 Hour 50 Minutes
+Attendees:
+
+Krushna (Full Stack Developer)
+
+Amit (Backend Architect)
+
+Priya (Product Manager)
+
+Sneha (Frontend Developer)
+
+Arjun (Database Engineer)
+
+Kavya (QA Lead)
+
+Rohan (HR Operations Representative)
+
+1. Introduction
+
+Priya: Good morning everyone. Today’s meeting is focused on designing and finalizing the rotational shift feature inside our Leave Management System. This is a high-priority requirement from HR because several departments operate on rotating shifts including morning, evening, and night cycles.
+
+Rohan: Yes, currently we manage shifts manually in Excel, and it’s becoming difficult when leave overlaps occur. We need automation to calculate eligibility and avoid shift conflicts.
+
+Krushna: Understood. From a system perspective, we need to define how shifts rotate, how they are assigned, and how leave interacts with the rotation schedule.
+
+2. Functional Requirements Discussion
+
+Priya: Let’s list down core requirements first.
+
+Rohan:
+
+Employees should be assigned to a rotational shift pattern.
+
+Rotation could be weekly or bi-weekly.
+
+Leave approval should automatically check shift assignment.
+
+Managers should see shift calendars.
+
+Swapping shifts between employees should be allowed with approval.
+
+Amit: So essentially, shifts become a core entity in the system. Currently, we only track leave records, employee data, and leave balances.
+
+Krushna: Correct. We need to introduce:
+
+Shift Master
+
+Shift Rotation Pattern
+
+Employee Shift Assignment
+
+Shift Swap Requests
+
+Sneha: On UI side, we’ll need:
+
+Shift calendar view
+
+Assignment dashboard
+
+Swap request modal
+
+3. Database Design Discussion
+
+Arjun: Let me propose a schema structure.
+
+Tables:
+
+shifts
+
+id
+
+name (Morning, Evening, Night)
+
+start_time
+
+end_time
+
+rotation_patterns
+
+id
+
+name
+
+cycle_duration_days
+
+rotation_pattern_details
+
+id
+
+pattern_id
+
+day_number
+
+shift_id
+
+employee_shift_assignments
+
+id
+
+employee_id
+
+pattern_id
+
+start_date
+
+shift_swap_requests
+
+id
+
+requester_id
+
+target_employee_id
+
+shift_date
+
+status
+
+Amit: This is good normalization. The pattern details table will define the shift sequence.
+
+Krushna: Yes, and while calculating shift for a particular date, we compute:
+
+difference = (current_date - start_date) % cycle_duration
+
+Then fetch corresponding shift from rotation_pattern_details.
+
+Arjun: That logic should be implemented at backend service layer.
+
+4. Backend API Design
+
+Amit: Let’s define endpoints.
+
+Shift Management
+
+POST /api/shifts
+
+GET /api/shifts
+
+PUT /api/shifts/:id
+
+Rotation Pattern
+
+POST /api/rotation-patterns
+
+GET /api/rotation-patterns
+
+Assign Pattern to Employee
+
+POST /api/employees/:id/assign-rotation
+
+Fetch Employee Shift for Date
+
+GET /api/employees/:id/shift?date=YYYY-MM-DD
+
+Shift Swap
+
+POST /api/shift-swaps
+
+PUT /api/shift-swaps/:id/approve
+
+Krushna: Leave approval logic should call shift service internally to validate whether minimum staffing is maintained.
+
+Priya: Yes, we must define minimum staffing rules per shift.
+
+5. Leave Interaction Logic
+
+Kavya: What happens if two employees from same shift apply for leave on same day?
+
+Rohan: That’s a problem for HR. We need a validation rule.
+
+Amit: We can implement:
+
+Each shift has minimum_required_employees
+
+During leave approval, system calculates active employees for that shift on that date
+
+If below threshold → block approval
+
+Krushna: This means leave service must integrate with shift assignment service.
+
+Arjun: That requires optimized queries to avoid performance issues.
+
+6. Algorithm Discussion for Rotation
+
+Amit: Let’s discuss shift rotation logic in detail.
+
+Krushna: Suppose:
+Cycle Duration = 7 days
+Pattern:
+Day 1 → Morning
+Day 2 → Morning
+Day 3 → Evening
+Day 4 → Evening
+Day 5 → Night
+Day 6 → Night
+Day 7 → Off
+
+If employee starts on March 1:
+
+To find shift on March 10:
+
+daysDifference = 9
+index = 9 % 7 = 2
+
+So shift = Day 3 in pattern → Evening
+
+Sneha: That logic seems simple and efficient.
+
+Amit: Yes, but we must handle timezone and daylight saving cases.
+
+7. Edge Cases
+
+Kavya:
+
+What if employee joins mid-cycle?
+
+What if pattern changes?
+
+What if shift timing changes historically?
+
+Arjun: We should not update past assignments. Use effective_from date.
+
+Krushna: Good idea. Maintain history.
+
+8. Frontend Design
+
+Sneha: I propose:
+
+Calendar view (Monthly)
+
+Color coding:
+
+Morning → Blue
+
+Evening → Orange
+
+Night → Purple
+
+Leave → Red
+
+Hover tooltip → shift timing
+
+Filter by department
+
+Priya: Also export to Excel feature.
+
+Sneha: That can be Phase 2.
+
+9. Security & Access Control
+
+Amit:
+
+Only HR can create rotation patterns.
+
+Managers can approve swaps.
+
+Employees can request swaps but not approve.
+
+Krushna: We’ll use role-based middleware.
+
+10. Performance Considerations
+
+Arjun:
+
+Index on employee_id + start_date
+
+Cache rotation pattern in memory
+
+Avoid recalculating full cycles repeatedly
+
+Amit: We can precompute upcoming 30 days shifts and cache.
+
+11. Deployment Considerations
+
+Krushna:
+
+Backend in Node.js
+
+Database: MySQL
+
+Use environment variables
+
+Ensure migrations for new tables
+
+Priya: Timeline?
+
+Krushna:
+
+DB design: 2 days
+
+Backend APIs: 4 days
+
+Frontend integration: 3 days
+
+Testing: 3 days
+
+Kavya: We’ll prepare unit and integration test cases.
+
+12. Risks Identified
+
+Complex swap logic
+
+Leave and shift conflict rules
+
+Edge cases in cycle calculation
+
+High query load in large departments
+
+13. Final Decisions
+
+Weekly rotation as default.
+
+Minimum staffing validation mandatory.
+
+Shift swap requires manager approval.
+
+Historical tracking enabled.
+
+Phase 1 without Excel export.
+
+14. Action Items
+
+Krushna → Implement rotation logic service
+
+Arjun → Create DB migration scripts
+
+Sneha → Design calendar UI
+
+Amit → Review API contracts
+
+Kavya → Prepare test scenarios
+
+Priya → Share requirement document with stakeholders
+
+Meeting concluded at 12:50 PM.
